@@ -1,6 +1,7 @@
 package com.vivaeventos.boletas_service.messaging;
 
 import com.vivaeventos.boletas_service.dto.CreateTicketRequest;
+import com.vivaeventos.boletas_service.service.QrCodeService;
 import com.vivaeventos.boletas_service.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,10 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import com.vivaeventos.boletas_service.model.Ticket;
 import com.vivaeventos.boletas_service.service.EmailService;
+import com.vivaeventos.boletas_service.model.Ticket;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +24,7 @@ public class OrderConfirmedListener {
 
     private final TicketService ticketService;
     private final EmailService emailService;
+    private final QrCodeService qrCodeService;
 
     @RabbitListener(
             queues = RabbitConstants.ORDER_CONFIRMED_QUEUE
@@ -72,10 +78,29 @@ public class OrderConfirmedListener {
 
         body.append("\nGracias por usar VivaEventos.");
 
-        emailService.sendEmail(
+
+        Map<String, byte[]> attachments =
+                new HashMap<>();
+
+        for (Ticket ticket : generatedTickets) {
+
+            attachments.put(
+                    "ticket-" +
+                            ticket.getId() +
+                            ".png",
+
+                    qrCodeService.generateQrCode(
+                            ticket.getQrCode()
+                    )
+            );
+        }
+
+
+        emailService.sendEmailWithAttachments(
                 message.getBuyerEmail(),
                 "Tus boletas de VivaEventos",
-                body.toString()
+                body.toString(),
+                attachments
         );
     }
 }

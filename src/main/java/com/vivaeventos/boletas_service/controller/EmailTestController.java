@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 public class EmailTestController {
 
     private final EmailService emailService;
-
+/*
     @PostMapping("/email")
     public String sendTestEmail() {
 
@@ -20,6 +20,6 @@ public class EmailTestController {
                 "Si recibes este correo, la integración funciona."
         );
 
-        return "Correo enviado";
-    }
+        return "Correo enviado";*/
+
 }
