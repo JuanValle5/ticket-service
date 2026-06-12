@@ -23,6 +23,19 @@ spring:
     password: vivaeventos123
     virtual-host: vivaeventos
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: juanjo.valencia.j@gmail.com
+    password: amoo wtiq aoke udmt
+
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: 8085
 

@@ -6,6 +6,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import com.vivaeventos.boletas_service.model.Ticket;
+import com.vivaeventos.boletas_service.service.EmailService;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -13,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class OrderConfirmedListener {
 
     private final TicketService ticketService;
+    private final EmailService emailService;
 
     @RabbitListener(
             queues = RabbitConstants.ORDER_CONFIRMED_QUEUE
@@ -22,22 +28,54 @@ public class OrderConfirmedListener {
     ) {
 
         log.info(
-                "Orden confirmada recibida: {}",
-                message.getOrderId()
+                "Orden confirmada recibida: {} email={}",
+                message.getOrderId(),
+                message.getBuyerEmail()
         );
+
+        List<Ticket> generatedTickets =
+                new ArrayList<>();
 
         message.getItems().forEach(item -> {
 
             for (int i = 0; i < item.getQuantity(); i++) {
 
-                ticketService.createTicket(
-                        new CreateTicketRequest(
-                                message.getEventId(),
-                                message.getOrderId(),
-                                message.getBuyerId()
-                        )
-                );
+                Ticket ticket =
+                        ticketService.createTicket(
+                                new CreateTicketRequest(
+                                        message.getEventId(),
+                                        message.getOrderId(),
+                                        message.getBuyerId()
+                                )
+                        );
+
+                generatedTickets.add(ticket);
             }
         });
+
+        StringBuilder body =
+                new StringBuilder();
+
+        body.append("Hola.\n\n");
+        body.append("Tu compra fue confirmada.\n\n");
+        body.append("Orden: ")
+                .append(message.getOrderId())
+                .append("\n\n");
+
+        body.append("Boletas generadas:\n");
+
+        generatedTickets.forEach(ticket ->
+                body.append("- ")
+                        .append(ticket.getId())
+                        .append("\n")
+        );
+
+        body.append("\nGracias por usar VivaEventos.");
+
+        emailService.sendEmail(
+                message.getBuyerEmail(),
+                "Tus boletas de VivaEventos",
+                body.toString()
+        );
     }
 }

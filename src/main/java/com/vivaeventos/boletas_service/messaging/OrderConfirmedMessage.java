@@ -16,6 +16,8 @@ public class OrderConfirmedMessage {
 
     private UUID buyerId;
 
+    private String buyerEmail;
+
     private UUID eventId;
 
     private List<OrderItemMessage> items;
