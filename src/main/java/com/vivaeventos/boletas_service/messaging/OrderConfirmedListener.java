@@ -1,17 +1,16 @@
 package com.vivaeventos.boletas_service.messaging;
 
 import com.vivaeventos.boletas_service.dto.CreateTicketRequest;
-import com.vivaeventos.boletas_service.service.NotificationService;
-import com.vivaeventos.boletas_service.service.QrCodeService;
-import com.vivaeventos.boletas_service.service.TicketService;
+import com.vivaeventos.boletas_service.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.SchedulerException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import com.vivaeventos.boletas_service.model.Ticket;
-import com.vivaeventos.boletas_service.service.EmailService;
 import com.vivaeventos.boletas_service.model.Ticket;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,18 +26,25 @@ public class OrderConfirmedListener {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final QrCodeService qrCodeService;
+    private final ReminderSchedulerService reminderSchedulerService;
 
     @RabbitListener(
             queues = RabbitConstants.ORDER_CONFIRMED_QUEUE
     )
     public void handle(
             OrderConfirmedMessage message
-    ) {
+    ) throws SchedulerException {
 
         log.info(
                 "Orden confirmada recibida: {} email={}",
                 message.getOrderId(),
                 message.getBuyerEmail()
+        );
+
+        log.info(
+                "Evento: {} - {}",
+                message.getEventName(),
+                message.getEventDate()
         );
 
         List<Ticket> generatedTickets =
@@ -126,5 +132,13 @@ public class OrderConfirmedListener {
 
             throw e;
         }
+
+        reminderSchedulerService.scheduleReminder(
+                message.getBuyerEmail(),
+                message.getEventName(),
+                message.getEventDate()
+                        .atStartOfDay()
+                        .minusDays(1)
+        );
     }
 }

@@ -2,6 +2,7 @@ package com.vivaeventos.boletas_service.messaging;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +20,14 @@ public class OrderConfirmedMessage {
     private String buyerEmail;
 
     private UUID eventId;
+
+    private String eventName;
+
+    private LocalDate eventDate;
+
+    private String eventLocation;
+
+    private String eventCity;
 
     private List<OrderItemMessage> items;
 }
