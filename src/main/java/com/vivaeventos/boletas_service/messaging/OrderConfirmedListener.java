@@ -1,6 +1,7 @@
 package com.vivaeventos.boletas_service.messaging;
 
 import com.vivaeventos.boletas_service.dto.CreateTicketRequest;
+import com.vivaeventos.boletas_service.service.NotificationService;
 import com.vivaeventos.boletas_service.service.QrCodeService;
 import com.vivaeventos.boletas_service.service.TicketService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.List;
 public class OrderConfirmedListener {
 
     private final TicketService ticketService;
+    private final NotificationService notificationService;
     private final EmailService emailService;
     private final QrCodeService qrCodeService;
 
@@ -96,11 +98,33 @@ public class OrderConfirmedListener {
         }
 
 
-        emailService.sendEmailWithAttachments(
-                message.getBuyerEmail(),
-                "Tus boletas de VivaEventos",
-                body.toString(),
-                attachments
-        );
+        try {
+
+            emailService.sendEmailWithAttachments(
+                    message.getBuyerEmail(),
+                    "Tus boletas de VivaEventos",
+                    body.toString(),
+                    attachments
+            );
+
+            generatedTickets.forEach(ticket ->
+                    notificationService.saveSuccess(
+                            ticket.getId(),
+                            message.getBuyerEmail()
+                    )
+            );
+
+        } catch (Exception e) {
+
+            generatedTickets.forEach(ticket ->
+                    notificationService.saveFailure(
+                            ticket.getId(),
+                            message.getBuyerEmail(),
+                            e.getMessage()
+                    )
+            );
+
+            throw e;
+        }
     }
 }
