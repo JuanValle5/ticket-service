@@ -1,6 +1,8 @@
 package com.vivaeventos.boletas_service.service;
 
 import com.vivaeventos.boletas_service.dto.CreateTicketRequest;
+import com.vivaeventos.boletas_service.messaging.TicketCreatedMessage;
+import com.vivaeventos.boletas_service.messaging.TicketPublisher;
 import com.vivaeventos.boletas_service.model.Ticket;
 import com.vivaeventos.boletas_service.model.TicketStatus;
 import com.vivaeventos.boletas_service.repository.TicketRepository;
@@ -16,6 +18,7 @@ public class TicketService {
 
     private final TicketRepository repository;
     private final QrCodeService qrCodeService;
+    private final TicketPublisher ticketPublisher;
 
     public Ticket createTicket(CreateTicketRequest request) {
 
@@ -28,7 +31,35 @@ public class TicketService {
                 .status(TicketStatus.ACTIVE)
                 .build();
 
-        return repository.save(ticket);
+        Ticket savedTicket =
+                repository.save(ticket);
+
+        ticketPublisher.publishTicketCreated(
+                TicketCreatedMessage.builder()
+                        .ticketId(
+                                savedTicket.getId()
+                        )
+                        .qrCode(
+                                savedTicket.getQrCode()
+                        )
+                        .eventId(
+                                savedTicket.getEventId()
+                        )
+                        .orderId(
+                                savedTicket.getOrderId()
+                        )
+                        .attendeeId(
+                                savedTicket.getAttendeeId()
+                        )
+                        .status(
+                                savedTicket
+                                        .getStatus()
+                                        .name()
+                        )
+                        .build()
+        );
+
+        return savedTicket;
     }
 
     public Ticket getTicket(UUID id) {
